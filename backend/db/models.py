@@ -82,3 +82,10 @@ class AuditLog(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )        
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(String, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="admin")    

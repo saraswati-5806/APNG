@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from db.database import SessionLocal
-from db.models import Alert, IOC
+from db.models import Alert, IOC, User
+from core.auth import get_current_user
 
 
 router = APIRouter(
@@ -39,7 +40,10 @@ class AlertCreate(BaseModel):
 
 
 @router.get("/")
-def get_alerts(db: Session = Depends(get_db)):
+def get_alerts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
 
     alerts = db.query(Alert).all()
 
@@ -72,7 +76,8 @@ def get_alerts(db: Session = Depends(get_db)):
 @router.post("/")
 def create_alert(
     alert_data: AlertCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     # Check whether the source IP exists in the IOC database

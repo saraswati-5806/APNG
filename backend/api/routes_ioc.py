@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from db.database import SessionLocal
-from db.models import IOC
+from db.models import IOC, User
+from core.auth import get_current_user
 
 
 router = APIRouter(
@@ -39,7 +40,10 @@ class IOCSyncRequest(BaseModel):
 
 
 @router.get("/")
-def get_iocs(db: Session = Depends(get_db)):
+def get_iocs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
 
     iocs = db.query(IOC).all()
 
@@ -60,7 +64,8 @@ def get_iocs(db: Session = Depends(get_db)):
 @router.post("/")
 def create_ioc(
     ioc_data: IOCCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     existing_ioc = (
@@ -98,7 +103,8 @@ def create_ioc(
 @router.post("/sync")
 def sync_iocs(
     sync_data: IOCSyncRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     added = 0
