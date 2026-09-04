@@ -1,0 +1,13 @@
+[33mcommit db763ff66e2108eca40e008786fdcc9cbb3f7cf1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/frontend[m[33m, [m[1;31morigin/feature/frontend[m[33m, [m[1;31morigin/develop[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mdevelop[m[33m)[m
+Author: Durvesh45 <rawooldurvesh@gmail.com>
+Date:   Mon Aug 31 17:16:24 2026 +0530
+
+    Complete backend authentication and remediation
+
+ backend/api/routes_alerts.py |  11 [32m++[m[31m--[m
+ backend/api/routes_auth.py   |  60 [32m+++++++++++++++++++++[m
+ backend/api/routes_ioc.py    |  14 [32m+++[m[31m--[m
+ backend/core/auth.py         | 125 [32m+++++++++++++++++++++++++++++++++++++++++++[m
+ backend/db/models.py         |   9 [32m+++[m[31m-[m
+ backend/main.py              |   3 [32m+[m[31m-[m
+ 6 files changed, 213 insertions(+), 9 deletions(-)
