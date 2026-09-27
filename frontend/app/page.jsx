@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { get } from "../lib/api-client";
 
 const names = {
   overview: "Network Overview",
@@ -26,6 +27,15 @@ export default function Home() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [alerts, setAlerts] = useState([]);
+
+  useEffect(() => {
+    get("/api/alerts/")
+      .then((data) => setAlerts(data))
+      .catch((error) =>
+        console.error("Failed to load alerts:", error)
+      );
+  }, []);
 
   function showToast(message) {
     setToastMessage(message);
@@ -315,10 +325,38 @@ export default function Home() {
 
               <div className="panel">
 
-                <p className="meta">
-                  No alerts available. Scan a file to
-                  generate security analysis results.
-                </p>
+                {alerts.length === 0 ? (
+                  <p className="meta">
+                    No alerts available.
+                  </p>
+                ) : (
+                  <div>
+                    {alerts.map((alert) => (
+                      <div key={alert.alert_id}>
+
+                        <h3>{alert.alert_id}</h3>
+
+                        <p>
+                          Source IP: {alert.source?.ip}
+                        </p>
+
+                        <p>
+                          Risk Level: {alert.risk_level}
+                        </p>
+
+                        <p>
+                          Recommended Action:{" "}
+                          {alert.recommended_action}
+                        </p>
+
+                        <p>
+                          Status: {alert.status}
+                        </p>
+
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               </div>
 

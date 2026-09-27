@@ -1,6 +1,4 @@
 // APNG API Client
-// This file is prepared for connecting the APNG frontend
-// with a backend API when the backend is available.
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -9,12 +7,18 @@ const API_BASE_URL =
  * Send a request to the APNG backend.
  */
 export async function apiRequest(endpoint, options = {}) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("apng_token")
+      : null;
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       ...(options.body instanceof FormData
         ? {}
         : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -55,9 +59,6 @@ export async function post(endpoint, data) {
 
 /**
  * Upload a file to the backend.
- *
- * The actual backend endpoint should be provided
- * when the backend is implemented.
  */
 export async function uploadFile(endpoint, file) {
   const formData = new FormData();
