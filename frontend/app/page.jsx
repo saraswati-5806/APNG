@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { get } from "../lib/api-client";
+import { get, post } from "../lib/api-client";
 
 const names = {
   overview: "Network Overview",
@@ -28,14 +28,40 @@ export default function Home() {
   const [result, setResult] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [alerts, setAlerts] = useState([]);
+  const [remediationActions, setRemediationActions] = useState({});
+  const [alertLoadError, setAlertLoadError] = useState("");
+  const [iocs, setIocs] = useState([]);
+  const [iocLoadError, setIocLoadError] = useState("");
+
+  async function loadAlerts() {
+    try {
+      setAlertLoadError("");
+      const data = await get("/api/alerts/");
+      setAlerts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load alerts:", error);
+      setAlertLoadError("Unable to load alerts from APNG backend.");
+    }
+  }
+
+  async function loadIOCs() {
+    try {
+      setIocLoadError("");
+      const data = await get("/api/ioc/");
+      setIocs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load IoCs:", error);
+      setIocLoadError("Unable to load threat intelligence from APNG backend.");
+    }
+  }
 
   useEffect(() => {
-    get("/api/alerts/")
-      .then((data) => setAlerts(data))
-      .catch((error) =>
-        console.error("Failed to load alerts:", error)
-      );
-  }, []);
+    loadAlerts();
+
+    if (activePage === "threats") {
+      loadIOCs();
+    }
+  }, [activePage]);
 
   function showToast(message) {
     setToastMessage(message);
@@ -92,6 +118,64 @@ export default function Home() {
         showToast("Scan completed");
       }
     }, 250);
+  }
+
+  async function requestRemediation(alert) {
+    try {
+      const data = await post("/api/remediate/", {
+        alert_id: alert.alert_id,
+        action_type: alert.recommended_action,
+      });
+
+      setRemediationActions((prev) => ({
+        ...prev,
+        [alert.alert_id]: data,
+      }));
+
+      showToast("Remediation request created");
+    } catch (error) {
+      console.error("Failed to create remediation:", error);
+      showToast("Failed to create remediation request");
+    }
+  }
+
+  async function confirmRemediation(alert) {
+    const action = remediationActions[alert.alert_id];
+
+    if (!action?.action_id) {
+      showToast("No pending remediation action");
+      return;
+    }
+
+    const confirmedBy = window.prompt(
+      "Confirm remediation as:",
+      "admin"
+    );
+
+    if (!confirmedBy) return;
+
+    try {
+      await post(
+        `/api/remediate/${action.action_id}/confirm`,
+        {
+          confirmed_by: confirmedBy,
+        }
+      );
+
+      const updatedAlerts = await get("/api/alerts/");
+      setAlerts(updatedAlerts);
+
+      setRemediationActions((prev) => {
+        const updated = { ...prev };
+        delete updated[alert.alert_id];
+        return updated;
+      });
+
+      showToast("Remediation confirmed");
+    } catch (error) {
+      console.error("Failed to confirm remediation:", error);
+      showToast("Failed to confirm remediation");
+    }
   }
 
   return (
@@ -454,21 +538,71 @@ export default function Home() {
 
                 <button
                   className="btn primary"
-                  onClick={() =>
-                    showToast("IoC sync started")
-                  }
+                  onClick={() => {
+                    loadIOCs();
+                    showToast("IoC feed refreshed");
+                  }}
                 >
-                  Sync Feed
+                  Refresh Feed
                 </button>
 
               </div>
 
               <div className="panel">
 
-                <p className="meta">
-                  Threat intelligence results will
-                  appear after a file is scanned.
-                </p>
+                {iocLoadError && (
+                  <p className="meta">
+                    {iocLoadError}
+                  </p>
+                )}
+
+                {iocs.length === 0 ? (
+                  <p className="meta">
+                    No IoCs available.
+                  </p>
+                ) : (
+                  <div>
+                    {iocs.map((ioc) => (
+                      <div
+                        key={ioc.ioc_id}
+                        style={{
+                          padding: "20px",
+                          marginBottom: "16px",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "10px",
+                        }}
+                      >
+                        <h3>
+                          {ioc.ioc_id || "Unknown IoC"}
+                        </h3>
+
+                        <p>
+                          Type: {ioc.type || "N/A"}
+                        </p>
+
+                        <p>
+                          Value: {ioc.value || "N/A"}
+                        </p>
+
+                        <p>
+                          Confidence: {ioc.confidence || "N/A"}
+                        </p>
+
+                        <p>
+                          First Seen: {ioc.first_seen || "N/A"}
+                        </p>
+
+                        <p>
+                          Shared By: {ioc.shared_by_org_hash || "N/A"}
+                        </p>
+
+                        <p>
+                          TLP: {ioc.tlp || "N/A"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               </div>
 
@@ -491,15 +625,90 @@ export default function Home() {
                   </h2>
                 </div>
 
+                <button
+                  className="btn"
+                  onClick={loadAlerts}
+                >
+                  Refresh Queue
+                </button>
+
               </div>
 
               <div className="panel">
 
-                <p className="meta">
-                  No remediation actions available
-                  until a threat is detected.
-                </p>
+                {alertLoadError && (
+                  <p className="meta">
+                    {alertLoadError}
+                  </p>
+                )}
 
+                {alerts.filter(
+                  (alert) =>
+                    String(alert.status || "").trim() ===
+                    "PENDING_CONFIRMATION"
+                ).length === 0 ? (
+                  <p className="meta">
+                    No pending remediation actions.
+                  </p>
+                ) : (
+                  <div>
+                    {alerts
+                      .filter(
+                        (alert) =>
+                          String(alert.status || "").trim() ===
+                          "PENDING_CONFIRMATION"
+                      )
+                      .map((alert) => {
+                        const action = remediationActions[alert.alert_id];
+
+                        return (
+                          <div
+                            key={alert.alert_id}
+                            style={{
+                              padding: "20px",
+                              marginBottom: "16px",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "10px",
+                            }}
+                          >
+                            <h3>{alert.alert_id}</h3>
+
+                            <p>
+                              Source IP: {alert.source?.ip || "N/A"}
+                            </p>
+
+                            <p>
+                              Asset: {alert.source?.asset_name || "N/A"}
+                            </p>
+
+                            <p>
+                              Action: {alert.recommended_action || "N/A"}
+                            </p>
+
+                            <p>
+                              Status: {alert.status}
+                            </p>
+
+                            {!action ? (
+                              <button
+                                className="btn primary"
+                                onClick={() => requestRemediation(alert)}
+                              >
+                                Request Remediation
+                              </button>
+                            ) : (
+                              <button
+                                className="btn primary"
+                                onClick={() => confirmRemediation(alert)}
+                              >
+                                Confirm Remediation
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
 
             </section>

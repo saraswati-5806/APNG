@@ -15,6 +15,7 @@ from api.routes_ioc import router as ioc_router
 from api.routes_remediation import router as remediation_router
 from api.routes_auth import router as auth_router
 from api.routes_telemetry import router as telemetry_router
+from api.routes_topology import router as topology_router
 
 from db.database import engine, Base
 from db import models
@@ -44,6 +45,7 @@ app.include_router(ioc_router)
 app.include_router(remediation_router)
 app.include_router(auth_router)
 app.include_router(telemetry_router)
+app.include_router(topology_router)
 
 
 @app.get("/")
