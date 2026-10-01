@@ -1,57 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e) {
+  async function handleRegister(e) {
     e.preventDefault();
 
     setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const formData = new URLSearchParams();
-
-      formData.append("username", username);
-      formData.append("password", password);
-
       const response = await fetch(
-        "http://localhost:8000/api/auth/login",
+        "http://localhost:8000/api/auth/register",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
           },
-          body: formData,
+          body: JSON.stringify({
+            username,
+            password,
+          }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Invalid username or password");
+        throw new Error(data.detail || "Registration failed");
       }
 
-      // Save JWT token
-      localStorage.setItem("apng_token", data.access_token);
+      setSuccess("Registration successful. Redirecting to login...");
 
-      // Save user role
-      localStorage.setItem("apng_role", data.role);
-
-      // Role-based redirect
-      if (data.role === "admin") {
-        router.push("/");
-      } else {
-        router.push("/threats");
-      }
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,24 +62,18 @@ export default function LoginPage() {
   return (
     <main style={styles.page}>
       <div style={styles.card}>
-
         <div style={styles.logo}>APNG</div>
 
         <h1 style={styles.title}>
-          Autonomous Predictive
-          <br />
-          Network Guardian
+          Create Account
         </h1>
 
         <p style={styles.subtitle}>
-          Security Operations Dashboard
+          Autonomous Predictive Network Guardian
         </p>
 
-        <form onSubmit={handleLogin}>
-
-          <label style={styles.label}>
-            Username
-          </label>
+        <form onSubmit={handleRegister}>
+          <label style={styles.label}>Username</label>
 
           <input
             type="text"
@@ -90,9 +84,7 @@ export default function LoginPage() {
             style={styles.input}
           />
 
-          <label style={styles.label}>
-            Password
-          </label>
+          <label style={styles.label}>Password</label>
 
           <input
             type="password"
@@ -103,9 +95,26 @@ export default function LoginPage() {
             style={styles.input}
           />
 
+          <label style={styles.label}>Confirm Password</label>
+
+          <input
+            type="password"
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            style={styles.input}
+          />
+
           {error && (
             <div style={styles.error}>
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={styles.success}>
+              {success}
             </div>
           )}
 
@@ -114,15 +123,25 @@ export default function LoginPage() {
             disabled={loading}
             style={styles.button}
           >
-            {loading ? "Authenticating..." : "LOGIN"}
+            {loading ? "Creating Account..." : "REGISTER"}
           </button>
-
         </form>
+
+        <p style={styles.loginText}>
+          Already have an account?
+        </p>
+
+        <button
+          type="button"
+          onClick={() => router.push("/login")}
+          style={styles.loginButton}
+        >
+          LOGIN
+        </button>
 
         <p style={styles.footer}>
           APNG • Secure Local Access
         </p>
-
       </div>
     </main>
   );
@@ -161,8 +180,7 @@ const styles = {
 
   title: {
     textAlign: "center",
-    fontSize: "22px",
-    lineHeight: "1.4",
+    fontSize: "24px",
     margin: "0",
   },
 
@@ -205,6 +223,18 @@ const styles = {
     cursor: "pointer",
   },
 
+  loginButton: {
+    width: "100%",
+    padding: "11px",
+    border: "1px solid #334155",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "#38bdf8",
+    fontWeight: "700",
+    fontSize: "14px",
+    cursor: "pointer",
+  },
+
   error: {
     marginTop: "15px",
     padding: "10px",
@@ -212,6 +242,23 @@ const styles = {
     background: "#3f1d1d",
     color: "#fca5a5",
     fontSize: "14px",
+  },
+
+  success: {
+    marginTop: "15px",
+    padding: "10px",
+    borderRadius: "6px",
+    background: "#123524",
+    color: "#86efac",
+    fontSize: "14px",
+  },
+
+  loginText: {
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: "13px",
+    marginTop: "25px",
+    marginBottom: "10px",
   },
 
   footer: {

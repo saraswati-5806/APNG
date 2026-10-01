@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const names = {
   overview: "Network Overview",
@@ -26,6 +26,14 @@ export default function Home() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("apng_token");
+
+    if (!token) {
+      window.location.href = "/login";
+    }
+  }, []);
 
   function showToast(message) {
     setToastMessage(message);
@@ -152,11 +160,35 @@ export default function Home() {
               <h1>{names[activePage]}</h1>
             </div>
 
-            <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
               <span className="status">
                 <i></i>
                 Local services online
               </span>
+
+              <button
+                className="btn"
+                onClick={() => {
+                  window.location.href = "/login";
+                }}
+              >
+                Login
+              </button>
+
+              <button
+                className="btn primary"
+                onClick={() => {
+                  window.location.href = "/register";
+                }}
+              >
+                Register
+              </button>
             </div>
           </header>
 
