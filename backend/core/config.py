@@ -1,8 +1,11 @@
+
 import os
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:12345@localhost:5432/apng_db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is missing. Set it in your environment."
+    )
 
 APP_NAME = "APNG - Autonomous Predictive Network Guardian"
