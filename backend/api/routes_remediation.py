@@ -26,6 +26,7 @@ def get_db():
 class RemediationCreate(BaseModel):
     alert_id: str
     action_type: str
+    dry_run: bool = True
 
 
 class RemediationConfirm(BaseModel):
@@ -79,7 +80,7 @@ def create_remediation(
         alert_id=remediation.alert_id,
         action_type=remediation.action_type,
         status="PENDING_CONFIRMATION",
-        dry_run=True
+        dry_run=remediation.dry_run
     )
 
     db.add(action)
@@ -176,7 +177,7 @@ def confirm_remediation(
     return {
         "message": "Remediation confirmed",
         "action_id": action.action_id,
-        "alert_id": action.alert_id,
+        "alert_id": alert.alert_id,
         "action_type": action.action_type,
         "status": action.status,
         "confirmed_by": action.confirmed_by,

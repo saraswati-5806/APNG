@@ -37,7 +37,9 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Invalid username or password");
+        throw new Error(
+          data.detail || "Invalid username or password"
+        );
       }
 
       // Save JWT token
@@ -46,12 +48,8 @@ export default function LoginPage() {
       // Save user role
       localStorage.setItem("apng_role", data.role);
 
-      // Role-based redirect
-      if (data.role === "admin") {
-        router.push("/");
-      } else {
-        router.push("/threats");
-      }
+      // Redirect to the existing dashboard/home page
+      router.push("/");
     } catch (err) {
       setError(err.message);
     } finally {
